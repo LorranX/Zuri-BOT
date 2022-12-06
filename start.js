@@ -6,7 +6,7 @@ const os = require('os')
 const { color, notify, banner, centerBanner } = require('./lib/dfunctions');
 const { smsg, formatp } = require('./lib/functions');
 
-  //CONNECTION
+//CONNECTION
 
 const store = makeInMemoryStore({ logger: pino().child({ level: 'trace', stream: 'store' }) })
 
@@ -108,6 +108,18 @@ async function OpenConn() {
     l.sendMessage(jid, { text: t }, { quoted: q })
   }
 
+  /** Quick reply a message with mentions
+    *
+    * @param {*} from
+    * @param {*} t
+    * @param {*} q
+    * @returns
+    */
+
+   l.mreply = (jid, t, q, m) => {
+    l.sendMessage(jid, { text: t , mentions: m }, { quoted: q })
+  }  
+
   /** React to a messages 
      * 
      * @param {*} jid 
@@ -117,28 +129,98 @@ async function OpenConn() {
      */
 
   l.react = (jid, reaction, msg) => {
-   reactionMessage = {
-       react: {
-           text: reaction,
-           key: {
-               remoteJid: msg.chat,
-               fromMe: false,
-               id: msg.id,
-               participant: msg.sender
-           }
-       }
-   }
-   l.sendMessage(jid, reactionMessage)
- 
- }
+    reactionMessage = {
+      react: {
+        text: reaction,
+        key: {
+          remoteJid: msg.chat,
+          fromMe: false,
+          id: msg.id,
+          participant: msg.sender
+        }
+      }
+    }
+    l.sendMessage(jid, reactionMessage)
+
+  }
+
+  /** Send message with footer without buttons
+     *
+     * @param {*} jid
+     * @param {*} text
+     * @param {*} footer
+     * @param {*} options
+     * @param {*} mentio
+     * @returns
+     */
+
+  l.sendFooter = async (jid, text = '', footer = '', options = {}, mentio) => {
+    var tempfooter = generateWAMessageFromContent(jid, {
+      "buttonsMessage": {
+        "text": text,
+        "contentText": text,
+        "footerText": footer,
+        "contextInfo": {
+          "mentionedJid": mentio ? mentio : null,
+          "forwardingScore": 3,
+          "isForwarded": true
+        },
+        "headerType": "EMPTY"
+      }
+    }, options)
+    await l.relayMessage(jid, tempfooter.message, { messageId: tempfooter.key.id + ` sexo?` })
+  }
+
+  /** Send footer without buttons and reacts to sender's message
+     * 
+     * @param {*} jid 
+     * @param {*} text
+     * @param {*} footer
+     * @param {*} message
+     * @param {*} reaction
+     * @param {*} ment
+     * @returns 
+     */
+
+  l.sendFooterReaction = (jid, text, footer, message, quo, reaction, ment = ``) => {
+    l.sendFooter(jid, text, footer, { quoted: quo }, ment).then(() => l.react(jid, reaction, message))
+  }
+
+  /** Send template buttons without header
+     *
+     * @param {*} jid
+     * @param {*} text
+     * @param {*} footer
+     * @param [*] button
+     * @param {*} options
+     * @returns
+     */
+
+
+  l.send5But = async (jid, text = '', footer = '', but = [], quoted = "", options = {}) => {
+    var template = generateWAMessageFromContent(jid, proto.Message.fromObject({
+        viewOnceMessage: {
+            message: {
+                templateMessage: {
+                    hydratedTemplate: {
+                        "hydratedContentText": text,
+                        "hydratedFooterText": footer,
+                        "hydratedButtons": but
+                    }
+                }
+            }
+        }
+    }), options, { quoted })
+    l.relayMessage(jid, template.message, { messageId: template.key.id })
+  } 
 }
 
 
 
 OpenConn(), (err) => console.log("[ Connection Error ]", color(String(err), 'red'));
-  
-  //AUTO UPDATE
- 
+
+//AUTO UPDATE
+
 let file = require.resolve(__filename);
 fs.watchFile(file, () => {
   fs.unwatchFile(file);
