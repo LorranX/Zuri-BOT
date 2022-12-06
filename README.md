@@ -17,7 +17,7 @@ node start
 ```
 
 ## FUTURE UPDATES
-This is a basic template, but its not ready yet, I'll try to update it until I fix all the problems and make it as good as possible as far as my knowledge allows
+This is a basic template, but its not ready yet, I'll try to update it until I fix all the problems and make it as good as my knowledge allows
 
 ## THANKS TO
 * [`@adiwajshing/baileys`](https://github.com/adiwajshing/baileys)
