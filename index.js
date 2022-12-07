@@ -2,8 +2,10 @@ const fs = require("fs");
 const moment = require('moment-timezone');
 const speed = require('performance-now');
 const { color } = require('./lib/dfunctions');
+const { newExif } = require('./lib/exif')
 const { getGroupAdmins } = require('./lib/functions');
 const horaBR = moment.tz('America/Sao_Paulo').format('HH:mm:ss');
+
 
 module.exports = l = async (l, mek) => {
   try {
@@ -11,11 +13,14 @@ module.exports = l = async (l, mek) => {
     //MAIN VARIABLES
 
     const from = mek.key.remoteJid;
-    const type = Object.keys(mek.message).find((key) => !['senderKeyDistributionMessage', 'messageContextInfo'].includes(key));
-    const budy = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : '';
-    const body = (type === 'conversation' && mek.message.conversation) ? mek.message.conversation : (type == 'imageMessage') && mek.message[type].caption ? mek.message[type].caption : (type == 'videoMessage') && mek.message[type].caption ? mek.message[type].caption : (type == 'extendedTextMessage') && mek.message[type].text ? mek.message[type].text : (type == 'listResponseMessage') && mek.message[type].singleSelectReply.selectedRowId ? mek.message.listResponseMessage.singleSelectReply.selectedRowId : (type == 'templateButtonReplyMessage') ? mek.message.templateButtonReplyMessage.selectedId : (type === 'messageContextInfo') ? mek.message[type].singleSelectReply.selectedRowId : (type == 'l.sendMessageButtonMessage') && mek.message[type].selectedButtonId ? mek.message[type].selectedButtonId : (type == 'stickerMessage') && ((mek.message[type].fileSha256.toString('base64')) !== null && (mek.message[type].fileSha256.toString('base64')) !== undefined) ? (mek.message[type].fileSha256.toString('base64')) : "" || mek.message[type]?.selectedButtonId || "";
-    const args = body.trim().split(/ +/).slice(1)
-    const q = args.join(" ")
+    const budy = (mek.mtype === 'conversation') ? mek.message.conversation : (mek.mtype === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : '';
+    const body = (mek.mtype === 'conversation' && mek.message.conversation) ? mek.message.conversation : (mek.mtype == 'imageMessage') && mek.message[mek.mtype].caption ? mek.message[mek.mtype].caption : (mek.mtype == 'videoMessage') && mek.message[mek.mtype].caption ? mek.message[mek.mtype].caption : (mek.mtype == 'extendedTextMessage') && mek.message[mek.mtype].text ? mek.message[mek.mtype].text : (mek.mtype == 'listResponseMessage') && mek.message[mek.mtype].singleSelectReply.selectedRowId ? mek.message.listResponseMessage.singleSelectReply.selectedRowId : (mek.mtype == 'templateButtonReplyMessage') ? mek.message.templateButtonReplyMessage.selectedId : (mek.mtype === 'messageContextInfo') ? mek.message[mek.mtype].singleSelectReply.selectedRowId : (mek.mtype == 'l.sendMessageButtonMessage') && mek.message[mek.mtype].selectedButtonId ? mek.message[mek.mtype].selectedButtonId : (mek.mtype == 'stickerMessage') && ((mek.message[mek.mtype].fileSha256.toString('base64')) !== null && (mek.message[mek.mtype].fileSha256.toString('base64')) !== undefined) ? (mek.message[mek.mtype].fileSha256.toString('base64')) : "" || mek.message[mek.mtype]?.selectedButtonId || "";
+    const args = body.trim().split(/ +/).slice(1);
+    const q = args.join(" ");
+    const quo = (mek.quoted || mek);
+    const quoted = (quo.mtype == 'buttonsMessage') ? quo[Object.keys(quo)[1]] : (quo.mtype == 'templateMessage') ? quo.hydratedTemplate[Object.keys(quo.hydratedTemplate)[1]] : (quo.mtype == 'product') ? quo[Object.keys(quo)[0]] : mek.quoted ? mek.quoted : mek
+    const qmsg = (quoted.msg || quoted)
+    const mime = (quoted.msg || quoted).mimetype || ''
     const prefix = /^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/gi) : '.';
     const isGroup = from.endsWith('@g.us');
     const groupMetadata = isGroup ? await l.groupMetadata(from) : '';
@@ -63,6 +68,10 @@ module.exports = l = async (l, mek) => {
         l.send5But(from, `*Opções para contactar o meu criador*`, `selecione uma das opções abaixo`, templateButtons)
         break;
 
+      case 'menu': case 'comandos': case 'features':
+        l.menuList(from, mek)
+        break
+
 
       //#ADMIN FEATURES  
 
@@ -95,8 +104,8 @@ module.exports = l = async (l, mek) => {
         if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
         if (users == groupOwner) return l.reply(from, `*Não posso banir o dono do grupo*`, mek)
         action = await l.groupParticipantsUpdate(from, [users], 'remove')
-        if (action[0].status == 200) return l.mreply(from,`*De acordo com as ordens do admin @${mek.sender.split('@')[0]}, bani o @${users.split('@')[0]} do grupo*`,mek,[mek.sender,users])
-        else l.reply(from,`Obtive um erro ao tentar remover o usuario`)
+        if (action[0].status == 200) return l.mreply(from, `*De acordo com as ordens do admin @${mek.sender.split('@')[0]}, bani o @${users.split('@')[0]} do grupo*`, mek, [mek.sender, users])
+        else l.reply(from, `Obtive um erro ao tentar remover o usuario`)
         break;
 
       case 'add':
@@ -104,35 +113,78 @@ module.exports = l = async (l, mek) => {
         if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
         if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
         if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
-        if (participantsID.includes(users)) return l.mreply(from,`*O @${users.split('@')[0]} já está no grupo*`,mek,[mek.sender,users])
+        if (participantsID.includes(users)) return l.mreply(from, `*O @${users.split('@')[0]} já está no grupo*`, mek, [mek.sender, users])
         action = await l.groupParticipantsUpdate(from, [users], 'add')
-        if (action[0].status == 403) return l.mreply(from,`*Aparentemente o @${users.split('@')[0]} privou quem pode o adicionar em grupos*`,mek,[users])
-        if (action[0].status == 200) return l.mreply(from,`*De acordo com as ordens do admin @${mek.sender.split('@')[0]} adicionei o @${users.split('@')[0]} ao grupo*`,mek,[mek.sender,users])
-        else l.reply(from,`Obtive um erro ao tentar adicionar o usuario`)
-        break;        
+        if (action[0].status == 403) return l.mreply(from, `*Aparentemente o @${users.split('@')[0]} privou quem pode o adicionar em grupos*`, mek, [users])
+        if (action[0].status == 200) return l.mreply(from, `*De acordo com as ordens do admin @${mek.sender.split('@')[0]} adicionei o @${users.split('@')[0]} ao grupo*`, mek, [mek.sender, users])
+        else l.reply(from, `Obtive um erro ao tentar adicionar o usuario`)
+        break;
 
       case 'promote':
         users = mek.mentionedJid[0] ? mek.mentionedJid[0] : mek.quoted ? mek.quoted.sender : q.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
         if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
         if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
         if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
-        if (groupAdmins.includes(users)) return l.mreply(from,`*O @${users.split('@')[0]} já é um dos admins*`,mek,[users])
+        if (groupAdmins.includes(users)) return l.mreply(from, `*O @${users.split('@')[0]} já é um dos admins*`, mek, [users])
         action = await l.groupParticipantsUpdate(from, [users], 'promote')
-        if (action[0].status == 200) return l.mreply(from,`*O @${users.split('@')[0]} acaba de se tornar o nosso mais novo admin*`,mek,[users])
-        else l.reply(from,`Obtive um erro ao tentar promover o usuario`)
+        if (action[0].status == 200) return l.mreply(from, `*O @${users.split('@')[0]} acaba de se tornar o nosso mais novo admin*`, mek, [users])
+        else l.reply(from, `Obtive um erro ao tentar promover o usuario`)
         break;
 
-        case 'demote':
-          users = mek.mentionedJid[0] ? mek.mentionedJid[0] : mek.quoted ? mek.quoted.sender : q.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-          if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
-          if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
-          if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
-          if (!groupAdmins.includes(users)) return l.mreply(from,`*O @${users.split('@')[0]} não é um dos admins*`,mek,[users])
-          action = await l.groupParticipantsUpdate(from, [users], 'demote')
-          if (action[0].status == 200) return l.mreply(from,`*O @${users.split('@')[0]} acabou de voltar a ser um membro comum*`,mek,[users])
-          else l.reply(from,`Obtive um erro ao tentar demitir o usuario`)
-          break;        
+      case 'demote':
+        users = mek.mentionedJid[0] ? mek.mentionedJid[0] : mek.quoted ? mek.quoted.sender : q.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+        if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
+        if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
+        if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
+        if (!groupAdmins.includes(users)) return l.mreply(from, `*O @${users.split('@')[0]} não é um dos admins*`, mek, [users])
+        action = await l.groupParticipantsUpdate(from, [users], 'demote')
+        if (action[0].status == 200) return l.mreply(from, `*O @${users.split('@')[0]} acabou de voltar a ser um membro comum*`, mek, [users])
+        else l.reply(from, `Obtive um erro ao tentar demitir o usuario`)
+        break;
 
+
+      //#FUN FEATURES  
+
+      case 'sticker': case 'figurinha': case 'f': case 's':
+        if (!quoted) l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        if (/image/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+          let media = await l.downloadMediaMessage(qmsg)
+          let encmedia = await l.sendImageAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
+          await fs.unlinkSync(encmedia)
+        } else if (/video/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+          if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          let media = await l.downloadMediaMessage(qmsg)
+          let encmedia = await l.sendVideoAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
+          await fs.unlinkSync(encmedia)
+        } else {
+          l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        }
+        break
+
+      case 'st': case 's2': case 'f2':
+        if (!quoted) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        if (/image/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+          let media = await l.downloadMediaMessage(qmsg)
+          let encmedia = await l.sendImageAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
+          await fs.unlinkSync(encmedia)
+        } else if (/video/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+          if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          let media = await l.downloadMediaMessage(qmsg)
+          let encmedia = await l.sendVideoAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
+          await fs.unlinkSync(encmedia)
+        } else {
+          l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        }
+        break
+
+      case 'rename': case 'take':
+        packname = q.split('|')[0]
+        author = q.split('|')[1]
+        if (!/webp/.test(mime)) return l.reply(from, `*Para usar esse comando marque uma figurinha*`, mek)
+        let img = await l.downloadMediaMessage(qmsg)
+        sticker = await newExif(img, packname || `Zuri-BOT`, author || '')
+        l.sendMessage(from, { sticker: sticker }, { quoted: mek })
+        break
 
 
       default:

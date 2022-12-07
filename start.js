@@ -3,8 +3,14 @@ const { Boom } = require('@hapi/boom')
 const pino = require('pino');
 const fs = require('fs');
 const os = require('os')
+const { imageToWebp, videoToWebp, writeExifImg, writeExifVid, newExif } = require('./lib/exif')
 const { color, notify, banner, centerBanner } = require('./lib/dfunctions');
 const { smsg, formatp } = require('./lib/functions');
+
+//MAIN VARIABLES
+
+const more = String.fromCharCode(8206)
+const readMore = more.repeat(4001)
 
 //CONNECTION
 
@@ -116,9 +122,9 @@ async function OpenConn() {
     * @returns
     */
 
-   l.mreply = (jid, t, q, m) => {
-    l.sendMessage(jid, { text: t , mentions: m }, { quoted: q })
-  }  
+  l.mreply = (jid, t, q, m) => {
+    l.sendMessage(jid, { text: t, mentions: m }, { quoted: q })
+  }
 
   /** React to a messages 
      * 
@@ -191,7 +197,8 @@ async function OpenConn() {
      * @param {*} jid
      * @param {*} text
      * @param {*} footer
-     * @param [*] button
+     * @param {*} but
+     * @param {*} quoted
      * @param {*} options
      * @returns
      */
@@ -199,20 +206,123 @@ async function OpenConn() {
 
   l.send5But = async (jid, text = '', footer = '', but = [], quoted = "", options = {}) => {
     var template = generateWAMessageFromContent(jid, proto.Message.fromObject({
-        viewOnceMessage: {
-            message: {
-                templateMessage: {
-                    hydratedTemplate: {
-                        "hydratedContentText": text,
-                        "hydratedFooterText": footer,
-                        "hydratedButtons": but
-                    }
-                }
+      viewOnceMessage: {
+        message: {
+          templateMessage: {
+            hydratedTemplate: {
+              "hydratedContentText": text,
+              "hydratedFooterText": footer,
+              "hydratedButtons": but
             }
+          }
         }
+      }
     }), options, { quoted })
     l.relayMessage(jid, template.message, { messageId: template.key.id })
-  } 
+  }
+
+  /** Send list message with avaliable features
+     *
+     * @param {*} jid
+     * @param {*} quo
+     * @returns
+     */
+
+  l.menuList = async (jid, quo) => {
+
+    ex = [{ title: `PING`, rowId: `.ex ping` },
+    { title: `MEK`, rowId: `.ex mek` },
+    { title: `CREATOR`, rowId: `.ex creator` },
+    { title: `DELETE`, rowId: `.ex delete` },
+    { title: `LINKGP`, rowId: `.ex` },
+    { title: `HIDETAG`, rowId: `.ex hidetag` },
+    { title: `BAN`, rowId: `.ex ban` },
+    { title: `ADD`, rowId: `.ex add` },
+    { title: `PROMOTE`, rowId: `.ex promote` },
+    { title: `DEMOTE`, rowId: `.ex demote` },
+    { title: `S`, rowId: `.ex s` },
+    { title: `ST`, rowId: `.ex st` },
+    { title: `RENAME`, rowId: `.ex rename` },]
+
+    sections = [
+      {
+        title: "LISTA DE COMANDOS",
+        rows: ex
+      },
+    ]
+
+    const listMessage = {
+      text: "*Selecione uma das opções para receber um exemplo do comando selecionado*",
+      footer: `*MENU | Zuri-BOT*`,
+      title: more,
+      buttonText: "COMANDOS",
+      sections
+    }
+    l.sendMessage(jid, listMessage, { quoted: quo })
+  }
+
+  /** Download media from message
+     * 
+     * @param {*} message 
+     * @returns 
+     */
+
+  l.downloadMediaMessage = async (message) => {
+    let mime = (message.msg || message).mimetype || ''
+    let messageType = message.mtype ? message.mtype.replace(/Message/gi, '') : mime.split('/')[0]
+    const stream = await downloadContentFromMessage(message, messageType)
+    let buffer = Buffer.from([])
+    for await (const chunk of stream) {
+      buffer = Buffer.concat([buffer, chunk])
+    }
+
+    return buffer
+  }
+
+  /** Send sticker from image media
+     * 
+     * @param {*} jid 
+     * @param {*} path 
+     * @param {*} type
+     * @param {*} quoted 
+     * @param {*} options 
+     * @returns 
+     */
+
+  l.sendImageAsSticker = async (jid, path, type, quoted, options = {}) => {
+    let buff = Buffer.isBuffer(path) ? path : /^data:.*?\/.*?;base64,/i.test(path) ? Buffer.from(path.split`,`[1], 'base64') : /^https?:\/\//.test(path) ? await (await getBuffer(path)) : fs.existsSync(path) ? fs.readFileSync(path) : Buffer.alloc(0)
+    let buffer
+    if (options && (options.packname || options.author)) {
+      buffer = await writeExifImg(buff, options, type)
+    } else {
+      buffer = await imageToWebp(buff, type)
+    }
+
+    await l.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted })
+    return buffer
+  }
+
+  /** Send sticker from video media
+     * 
+     * @param {*} jid 
+     * @param {*} path 
+     * @param {*} type 
+     * @param {*} quoted 
+     * @param {*} options 
+     * @returns 
+     */
+
+  l.sendVideoAsSticker = async (jid, path, type, quoted, options = {}) => {
+    let buff = Buffer.isBuffer(path) ? path : /^data:.*?\/.*?;base64,/i.test(path) ? Buffer.from(path.split`,`[1], 'base64') : /^https?:\/\//.test(path) ? await (await getBuffer(path)) : fs.existsSync(path) ? fs.readFileSync(path) : Buffer.alloc(0)
+    let buffer
+    if (options && (options.packname || options.author)) {
+      buffer = await writeExifVid(buff, options, type)
+    } else {
+      buffer = await videoToWebp(buff, type)
+    }
+    await l.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted })
+    return buffer
+  }
 }
 
 
