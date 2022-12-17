@@ -174,7 +174,7 @@ async function OpenConn() {
         "headerType": "EMPTY"
       }
     }, options)
-    await l.relayMessage(jid, tempfooter.message, { messageId: tempfooter.key.id + ` sexo?` })
+    await l.relayMessage(jid, tempfooter.message, { messageId: tempfooter.key.id })
   }
 
   /** Send footer without buttons and reacts to sender's message

@@ -4,7 +4,6 @@ const speed = require('performance-now');
 const { color } = require('./lib/dfunctions');
 const { newExif } = require('./lib/exif')
 const { getGroupAdmins } = require('./lib/functions');
-const horaBR = moment.tz('America/Sao_Paulo').format('HH:mm:ss');
 
 
 module.exports = l = async (l, mek) => {
@@ -19,8 +18,12 @@ module.exports = l = async (l, mek) => {
     const q = args.join(" ");
     const quo = (mek.quoted || mek);
     const quoted = (quo.mtype == 'buttonsMessage') ? quo[Object.keys(quo)[1]] : (quo.mtype == 'templateMessage') ? quo.hydratedTemplate[Object.keys(quo.hydratedTemplate)[1]] : (quo.mtype == 'product') ? quo[Object.keys(quo)[0]] : mek.quoted ? mek.quoted : mek
-    const qmsg = (quoted.msg || quoted)
+    const qmsg = (quoted.msg || quoted);
     const mime = (quoted.msg || quoted).mimetype || ''
+    const isEphemeralImg = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.imageMessage ? true : false;
+    const isEphemeralVid = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.videoMessage ? true : false;
+    const isEphemeralStk = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.stickerMessage ? true : false;
+    const ephemeralPath = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message;
     const prefix = /^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/gi) : '.';
     const isGroup = from.endsWith('@g.us');
     const groupMetadata = isGroup ? await l.groupMetadata(from) : '';
@@ -36,15 +39,18 @@ module.exports = l = async (l, mek) => {
     const sender = mek.sender;
     const groupName = isGroup ? groupMetadata.subject : '';
     const pushname = mek.pushName || "";
+    const horaBR = moment.tz('America/Sao_Paulo').format('HH:mm:ss');
 
     //CONSOLE
 
-    if (isCmd && isGroup) console.log(color("[", "white") + color(" CMD 🛠️", "orange") + color("]", "white") + color(" - GP 👥 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO NO GRUPO ", "white") + color(groupName, "blue") + color(" POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body.substring(0, 10), "yellow") + ' ' + color(`COMANDO ATRAVES DE `, "white") + color(mek.mtype, "yellow"));
-    if (!isCmd && isGroup) console.log(color("[", "white") + color(" MSG 💬 ", "green") + color("]", "white") + color(" - GP 👥 -", "white") + color(" RECEBIDA AS ", "white") + color(horaBR, "blue") + color(" ENVIADO NO GRUPO ", "white") + color(groupName, "blue") + color(" POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(mek.mtype, "yellow") + ' ' + color(mek.mtype != "stickerMessage" ? body.substring(0, 10) : "", "white"))
-    if (isCmd && !isGroup) console.log(color("[", "white") + color(" CMD 🛠️", "orange") + color("]", "white") + color(" - PV 👤 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body, "yellow") + color(` COMANDO ATRAVES DE `, "white") + color(mek.mtype, "yellow"))
-    if (!isCmd && !isGroup) console.log(color("[", "white") + color(" MSG 💬 ", "green") + color("]", "white") + color(" - PV 👤 -", "white") + color(" RECEBIDA AS ", "white") + color(horaBR, "blue") + color(" ENVIADO POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(mek.mtype, "yellow") + ' ' + color(mek.mtype != "stickerMessage" ? body.substring(0, 10) : "", "white"))
+    if (isCmd && isGroup) console.log(color("[", "white") + color(" CMD 🛠️", "orange") + color("]", "white") + color(" - GP 👥 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO NO GRUPO ", "white") + color(groupName, "blue") + color(" POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body.substring(0, 15), "yellow") + ' ' + color(`COMANDO ATRAVES DE `, "white") + color(mek.mtype, "yellow"));
+    if (!isCmd && isGroup) console.log(color("[", "white") + color(" MSG 💬 ", "green") + color("]", "white") + color(" - GP 👥 -", "white") + color(" RECEBIDA AS ", "white") + color(horaBR, "blue") + color(" ENVIADO NO GRUPO ", "white") + color(groupName, "blue") + color(" POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(mek.mtype, "yellow") + ' ' + color(mek.mtype != "stickerMessage" ? body.substring(0, 15) : "", "white"))
+    if (isCmd && !isGroup) console.log(color("[", "white") + color(" CMD 🛠️", "orange") + color("]", "white") + color(" - PV 👤 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body.substring(0, 15), "yellow") + color(` COMANDO ATRAVES DE `, "white") + color(mek.mtype, "yellow"))
+    if (!isCmd && !isGroup) console.log(color("[", "white") + color(" MSG 💬 ", "green") + color("]", "white") + color(" - PV 👤 -", "white") + color(" RECEBIDA AS ", "white") + color(horaBR, "blue") + color(" ENVIADO POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(mek.mtype, "yellow") + ' ' + color(mek.mtype != "stickerMessage" ? body.substring(0, 15) : "", "white"))
 
     //COMMANDS
+
+
 
     switch (command) {
 
@@ -143,17 +149,19 @@ module.exports = l = async (l, mek) => {
         break;
 
 
+
+
       //#FUN FEATURES  
 
       case 'sticker': case 'figurinha': case 'f': case 's':
-        if (!quoted) l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-        if (/image/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
-          let media = await l.downloadMediaMessage(qmsg)
+        if (!quo) l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
+          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : qmsg)
           let encmedia = await l.sendImageAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
-        } else if (/video/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+        } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralVid) {
           if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-          let media = await l.downloadMediaMessage(qmsg)
+          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : qmsg)
           let encmedia = await l.sendVideoAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else {
@@ -162,14 +170,15 @@ module.exports = l = async (l, mek) => {
         break
 
       case 'st': case 's2': case 'f2':
-        if (!quoted) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-        if (/image/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
-          let media = await l.downloadMediaMessage(qmsg)
+        if (!quo) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+        if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
+          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : qmsg)
           let encmedia = await l.sendImageAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
-        } else if (/video/.test(mek.quoted ? mek.quoted.mimetype : mek.mimetype)) {
+        } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype || isEphemeralVid)) {
           if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-          let media = await l.downloadMediaMessage(qmsg)
+          if (mek.quoted.fileLength.low >= 1300000) l.reply(from, `*Mídias com mais de 1.3MB geralmente geram sticker estáticos, se for o caso tente diminuir a duração*`, mek)
+          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : qmsg)
           let encmedia = await l.sendVideoAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else {
@@ -180,8 +189,8 @@ module.exports = l = async (l, mek) => {
       case 'rename': case 'take':
         packname = q.split('|')[0]
         author = q.split('|')[1]
-        if (!/webp/.test(mime)) return l.reply(from, `*Para usar esse comando marque uma figurinha*`, mek)
-        let img = await l.downloadMediaMessage(qmsg)
+        if (!/webp/.test(mime) && !isEphemeralStk) return l.reply(from, `*Para usar esse comando marque uma figurinha*`, mek)
+        let img = await l.downloadMediaMessage(isEphemeralStk ? ephemeralPath.stickerMessage : qmsg)
         sticker = await newExif(img, packname || `Zuri-BOT`, author || '')
         l.sendMessage(from, { sticker: sticker }, { quoted: mek })
         break
@@ -189,14 +198,26 @@ module.exports = l = async (l, mek) => {
 
       default:
 
-        if (budy.includes('>>')) {
-          var message = budy.slice(3);
+        //#TESTING
+
+        if (body.includes('>>')) {
+          var message = body.slice(3);
           try {
             l.reply(from, JSON.stringify((eval(message)), null, 2), mek);
           } catch (e) {
             err = String(e);
             l.reply(from, err, mek);
           };
+        }
+
+        //# DETECT COMMAND ERRORS
+
+        if (body.startsWith(`${prefix}${command}`)) {
+          if (isGroup) console.log(color("[", "red") + color(" CMD ERR 🛠️", "white") + color("]", "red") + color(" - GP 👥 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO NO GRUPO ", "white") + color(groupName, "blue") + color(" POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body.substring(0, 15), "yellow") + ' ' + color(`COMANDO NÃO GEROU NENHUM RESULTADO OU NÃO EXISTE ⚠️`, "yellow"));
+          else {
+            console.log(color("[", "red") + color(" CMD ERR 🛠️", "white") + color("]", "red") + color(" - PV 👤 -", "white") + color(" RECEBIDO AS ", "white") + color(horaBR, "blue") + color(" ENVIADO POR ", "white") + color(mek.sender.split("@")[0] + ` (${pushname})`, "blue") + ' ' + color(body.substring(0, 15), "yellow") + ' ' + color(`COMANDO NÃO GEROU NENHUM RESULTADO OU NÃO EXISTE ⚠️`, "yellow"));
+            l.react(from, `❌`, mek);
+          }
         }
 
     }
