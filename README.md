@@ -5,7 +5,7 @@ WhatsApp bot template using baileys lib
 This template is for free, use it as u wish, copy, modify and make him better, it was originally developed for windows, I do not guarantee its full operation on other platforms, be aware of that
 
 ## INSTALLATION AND CONNECTION
-first of all, I do recomend you instaling baileys edge version by using
+First of all, I do recomend you instaling baileys edge version by using
 
 ```bash
 npm i https://github.com/adiwajshing/Baileys
