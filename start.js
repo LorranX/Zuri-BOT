@@ -1,9 +1,9 @@
-const { default: WWConnection, useMultiFileAuthState, DisconnectReason, generateForwardMessageContent, prepareWAMessageMedia, generateWAMessageFromContent, downloadContentFromMessage, makeInMemoryStore, jidDecode, proto } = require("@adiwajshing/baileys")
+const { default: WWConnection, useMultiFileAuthState, DisconnectReason, generateWAMessageFromContent, downloadContentFromMessage, makeInMemoryStore, jidDecode, proto } = require("@adiwajshing/baileys")
 const { Boom } = require('@hapi/boom')
 const pino = require('pino');
 const fs = require('fs');
 const os = require('os')
-const { imageToWebp, videoToWebp, writeExifImg, writeExifVid, newExif } = require('./lib/exif')
+const { imageToWebp, videoToWebp, writeExifImg, writeExifVid} = require('./lib/exif')
 const { color, notify, banner, centerBanner } = require('./lib/dfunctions');
 const { smsg, formatp } = require('./lib/functions');
 

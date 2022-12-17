@@ -17,26 +17,24 @@ module.exports = l = async (l, mek) => {
     const args = body.trim().split(/ +/).slice(1);
     const q = args.join(" ");
     const quo = (mek.quoted || mek);
-    const quoted = (quo.mtype == 'buttonsMessage') ? quo[Object.keys(quo)[1]] : (quo.mtype == 'templateMessage') ? quo.hydratedTemplate[Object.keys(quo.hydratedTemplate)[1]] : (quo.mtype == 'product') ? quo[Object.keys(quo)[0]] : mek.quoted ? mek.quoted : mek
-    const qmsg = (quoted.msg || quoted);
-    const mime = (quoted.msg || quoted).mimetype || ''
-    const isEphemeralImg = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.imageMessage ? true : false;
-    const isEphemeralVid = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.videoMessage ? true : false;
-    const isEphemeralStk = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message?.stickerMessage ? true : false;
+    const quoted = (quo.mtype == 'buttonsMessage') ? quo[Object.keys(quo)[1]] : (quo.mtype == 'templateMessage') ? quo.hydratedTemplate[Object.keys(quo.hydratedTemplate)[1]] : (quo.mtype == 'product') ? quo[Object.keys(quo)[0]] : mek.quoted ? mek.quoted : mek;
+    const mime = (quoted.msg || quoted).mimetype || '';
+    const isEphemeralImg = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.imageMessage ? true : false;
+    const isEphemeralVid = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.videoMessage ? true : false;
+    const isEphemeralStk = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.stickerMessage ? true : false;
     const ephemeralPath = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message;
     const prefix = /^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/gi) : '.';
     const isGroup = from.endsWith('@g.us');
     const groupMetadata = isGroup ? await l.groupMetadata(from) : '';
     const participants = isGroup ? await groupMetadata?.participants : [];
-    const participantsID = isGroup ? participants?.map(a => a.id) : []
+    const participantsID = isGroup ? participants?.map(a => a.id) : [];
     const botNumber = await l.decodeJid(l.user.id);
     const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
     const isBotAdmins = isGroup ? groupAdmins.includes(botNumber) : false;
     const isAdmin = isGroup ? groupAdmins.includes(mek.sender) : false;
-    const groupOwner = isGroup ? groupMetadata.owner : ''
+    const groupOwner = isGroup ? groupMetadata.owner : '';
     const isCmd = body.startsWith(prefix);
     const command = isCmd ? body.slice(1).trim().split(/ +/).shift().toLowerCase() : false;
-    const sender = mek.sender;
     const groupName = isGroup ? groupMetadata.subject : '';
     const pushname = mek.pushName || "";
     const horaBR = moment.tz('America/Sao_Paulo').format('HH:mm:ss');
@@ -156,12 +154,12 @@ module.exports = l = async (l, mek) => {
       case 'sticker': case 'figurinha': case 'f': case 's':
         if (!quo) l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
         if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
-          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : qmsg)
+          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : quoted)
           let encmedia = await l.sendImageAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralVid) {
-          if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : qmsg)
+          if (quoted.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : quoted)
           let encmedia = await l.sendVideoAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else {
@@ -172,13 +170,13 @@ module.exports = l = async (l, mek) => {
       case 'st': case 's2': case 'f2':
         if (!quo) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
         if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
-          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : qmsg)
+          let media = await l.downloadMediaMessage(isEphemeralImg ? ephemeralPath.imageMessage : quoted)
           let encmedia = await l.sendImageAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype || isEphemeralVid)) {
-          if (qmsg.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          if (quoted.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
           if (mek.quoted.fileLength.low >= 1300000) l.reply(from, `*Mídias com mais de 1.3MB geralmente geram sticker estáticos, se for o caso tente diminuir a duração*`, mek)
-          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : qmsg)
+          let media = await l.downloadMediaMessage(isEphemeralVid ? ephemeralPath.videoMessage : quoted)
           let encmedia = await l.sendVideoAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else {
@@ -190,7 +188,7 @@ module.exports = l = async (l, mek) => {
         packname = q.split('|')[0]
         author = q.split('|')[1]
         if (!/webp/.test(mime) && !isEphemeralStk) return l.reply(from, `*Para usar esse comando marque uma figurinha*`, mek)
-        let img = await l.downloadMediaMessage(isEphemeralStk ? ephemeralPath.stickerMessage : qmsg)
+        let img = await l.downloadMediaMessage(isEphemeralStk ? ephemeralPath.stickerMessage : quoted)
         sticker = await newExif(img, packname || `Zuri-BOT`, author || '')
         l.sendMessage(from, { sticker: sticker }, { quoted: mek })
         break
