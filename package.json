@@ -6,7 +6,7 @@
     "start": "node start"
   },
   "dependencies": {
-    "@adiwajshing/baileys": "github:adiwajshing/Baileys",
+    "@adiwajshing/baileys": "latest",
     "@phaticusthiccy/open-apis": "1.8.5",
     "@vitalets/google-translate-api": "^9.0.0",
     "awesome-phonenumber": "^3.4.0",
