@@ -17,8 +17,7 @@ module.exports = l = async (l, mek) => {
     const args = body.trim().split(/ +/).slice(1);
     const q = args.join(" ");
     const quo = (mek.quoted || mek);
-    const quoted = (quo.mtype == 'buttonsMessage') ? quo[Object.keys(quo)[1]] : (quo.mtype == 'templateMessage') ? quo.hydratedTemplate[Object.keys(quo.hydratedTemplate)[1]] : (quo.mtype == 'product') ? quo[Object.keys(quo)[0]] : mek.quoted ? mek.quoted : mek;
-    const mime = (quoted.msg || quoted).mimetype || '';
+    const mime = (quo.msg || quo).mimetype || '';
     const isEphemeralImg = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.imageMessage ? true : false;
     const isEphemeralVid = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.videoMessage ? true : false;
     const isEphemeralStk = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.stickerMessage ? true : false;
@@ -52,7 +51,7 @@ module.exports = l = async (l, mek) => {
 
     switch (command) {
 
-      //#INFO & TESTING
+      //#BOT INFO & FEATURES
 
       case 'ping':
         let timestamp = speed()
@@ -70,6 +69,26 @@ module.exports = l = async (l, mek) => {
           { index: 2, callButton: { displayText: 'NÚMERO', phoneNumber: '+55 31 99570-3379' } },
         ]
         l.send5But(from, `*Opções para contactar o meu criador*`, `selecione uma das opções abaixo`, templateButtons)
+        break;
+
+      case 'setname':
+        if (!q) return l.reply(from, `*Para usar este comando você deve definir meu novo username*`, mek)
+        l.updateProfileName(q)
+        break
+
+      case 'leave': case 'sair':
+        if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
+        await l.groupLeave(from)
+        break
+
+      case 'setpicture': case 'setppbot':
+        if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
+          eph = isEphemeralImg ? ephemeralPath.imageMessage : quo
+          let media = await l.downloadAndSaveMediaMessage(mek.quoted ? eph : quo.message.imageMessage)
+          await l.updateProfilePicture(botNumber, { url: media })
+        } else {
+          l.reply(from, `*Para usar esse comando marque uma imagem*`, mek)
+        }
         break;
 
       case 'menu': case 'comandos': case 'features':
@@ -146,11 +165,40 @@ module.exports = l = async (l, mek) => {
         else l.reply(from, `Obtive um erro ao tentar demitir o usuario`)
         break;
 
+      case 'setpicturegp': case 'setppgp':
+        if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
+        if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
+        if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
+        if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
+          eph = isEphemeralImg ? ephemeralPath.imageMessage : quo
+          let media = await l.downloadAndSaveMediaMessage(mek.quoted ? eph : quo.message.imageMessage)
+          await l.updateProfilePicture(from, { url: media })
+        } else {
+          l.reply(from, `*Para usar esse comando marque uma imagem*`, mek)
+        }
+        break;
+
+      case 'setnamegp':
+        if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
+        if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
+        if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
+        if (!q) return l.reply(from, `*Para usar este comando você deve definir o novo nome do grupo*`, mek)
+        await l.groupUpdateSubject(from, q)
+        break;
+
+      case 'setdesc':
+        if (!isGroup) return l.reply(from, `*Este comando so pode ser utilizado em grupos*`, mek)
+        if (!isBotAdmins) return l.reply(from, `*Para usar este comando o bot deve ser um dos admins*`, mek)
+        if (!isAdmin) return l.reply(from, `*Para usar este comando você deve ser um dos admins*`, mek)
+        if (!q) return l.reply(from, `*Para usar este comando você deve definir a nova descrição do grupo*`, mek)
+        await l.groupUpdateDescription(from, q)
+        break;
+
 
 
 
       //#FUN FEATURES  
-      
+
       case 'sticker': case 'figurinha': case 'f': case 's':
         if (!quo) l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
         if (/image/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralImg) {
@@ -159,7 +207,7 @@ module.exports = l = async (l, mek) => {
           let encmedia = await l.sendImageAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralVid) {
-          if (quoted.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          if (quo.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
           eph = isEphemeralVid ? ephemeralPath.videoMessage : quo
           let media = await l.downloadMediaMessage(mek.quoted ? eph : quo.message.videoMessage)
           let encmedia = await l.sendVideoAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
@@ -177,7 +225,7 @@ module.exports = l = async (l, mek) => {
           let encmedia = await l.sendImageAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype || isEphemeralVid)) {
-          if (quoted.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          if (quo.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
           if (mek.quoted.fileLength.low >= 1300000) l.reply(from, `*Mídias com mais de 1.3MB geralmente geram sticker estáticos, se for o caso tente diminuir a duração*`, mek)
           eph = isEphemeralVid ? ephemeralPath.videoMessage : quo
           let media = await l.downloadMediaMessage(mek.quoted ? eph : quo.message.videoMessage)
@@ -192,7 +240,7 @@ module.exports = l = async (l, mek) => {
         packname = q.split('|')[0]
         author = q.split('|')[1]
         if (!/webp/.test(mime) && !isEphemeralStk) return l.reply(from, `*Para usar esse comando marque uma figurinha*`, mek)
-        let img = await l.downloadMediaMessage(isEphemeralStk ? ephemeralPath.stickerMessage : quoted)
+        let img = await l.downloadMediaMessage(isEphemeralStk ? ephemeralPath.stickerMessage : quo)
         sticker = await newExif(img, packname || `Zuri-BOT`, author || '')
         l.sendMessage(from, { sticker: sticker }, { quoted: mek })
         break
