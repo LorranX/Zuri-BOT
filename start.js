@@ -3,7 +3,8 @@ const { Boom } = require('@hapi/boom')
 const pino = require('pino');
 const fs = require('fs');
 const os = require('os')
-const { imageToWebp, videoToWebp, writeExifImg, writeExifVid} = require('./lib/exif')
+const filetype = require('file-type')
+const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/exif')
 const { color, notify, banner, centerBanner } = require('./lib/dfunctions');
 const { smsg, formatp } = require('./lib/functions');
 
@@ -277,6 +278,30 @@ async function OpenConn() {
     }
 
     return buffer
+  }
+
+  /** Download and save media from message
+      * 
+      * @param {*} message 
+      * @param {*} filename 
+      * @param {*} attachExtension 
+      * @returns 
+      */
+
+  l.downloadAndSaveMediaMessage = async (message, filename, attachExtension = true) => {
+    let quoted = message.msg ? message.msg : message
+    let mime = (message.msg || message).mimetype || ''
+    let messageType = message.mtype ? message.mtype.replace(/Message/gi, '') : mime.split('/')[0]
+    const stream = await downloadContentFromMessage(quoted, messageType)
+    let buffer = Buffer.from([])
+    for await (const chunk of stream) {
+      buffer = Buffer.concat([buffer, chunk])
+    }
+    let type = await filetype.fromBuffer(buffer)
+    trueFileName = attachExtension ? (filename + '.' + type.ext) : filename
+
+    await fs.writeFileSync(trueFileName, buffer)
+    return trueFileName
   }
 
   /** Send sticker from image media

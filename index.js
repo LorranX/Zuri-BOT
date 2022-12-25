@@ -86,6 +86,7 @@ module.exports = l = async (l, mek) => {
           eph = isEphemeralImg ? ephemeralPath.imageMessage : quo
           let media = await l.downloadAndSaveMediaMessage(mek.quoted ? eph : quo.message.imageMessage)
           await l.updateProfilePicture(botNumber, { url: media })
+          await fs.unlinkSync(media)
         } else {
           l.reply(from, `*Para usar esse comando marque uma imagem*`, mek)
         }
@@ -173,6 +174,7 @@ module.exports = l = async (l, mek) => {
           eph = isEphemeralImg ? ephemeralPath.imageMessage : quo
           let media = await l.downloadAndSaveMediaMessage(mek.quoted ? eph : quo.message.imageMessage)
           await l.updateProfilePicture(from, { url: media })
+          await fs.unlinkSync(media)
         } else {
           l.reply(from, `*Para usar esse comando marque uma imagem*`, mek)
         }
