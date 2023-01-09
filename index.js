@@ -22,6 +22,8 @@ module.exports = l = async (l, mek) => {
     const isEphemeralVid = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.videoMessage ? true : false;
     const isEphemeralStk = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message.stickerMessage ? true : false;
     const ephemeralPath = mek.message.extendedTextMessage?.contextInfo?.quotedMessage?.ephemeralMessage?.message;
+    const fileL = mek.quoted ? mek.quoted?.fileLength?.low : mek.msg?.fileLength?.low;
+    const msgSeconds = mek.quoted ? mek.quoted?.seconds : mek.msg?.seconds;
     const prefix = /^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™=|~!#$%^&.?/\\©^z+*,;]/gi) : '.';
     const isGroup = from.endsWith('@g.us');
     const groupMetadata = isGroup ? await l.groupMetadata(from) : '';
@@ -209,7 +211,7 @@ module.exports = l = async (l, mek) => {
           let encmedia = await l.sendImageAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype) || isEphemeralVid) {
-          if (quo.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          if (msgSeconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
           eph = isEphemeralVid ? ephemeralPath.videoMessage : quo
           let media = await l.downloadMediaMessage(mek.quoted ? eph : quo.message.videoMessage)
           let encmedia = await l.sendVideoAsSticker(from, media, `f`, mek, { packname: `Zuri`, author: `BOT` })
@@ -227,8 +229,8 @@ module.exports = l = async (l, mek) => {
           let encmedia = await l.sendImageAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
           await fs.unlinkSync(encmedia)
         } else if (/video/.test(mek.quoted ? mek.quoted.mtype : mek.mtype || isEphemeralVid)) {
-          if (quo.seconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
-          if (mek.quoted.fileLength.low >= 1300000) l.reply(from, `*Mídias com mais de 1.3MB geralmente geram sticker estáticos, se for o caso tente diminuir a duração*`, mek)
+          if (msgSeconds > 10) return l.reply(from, `*Para usar esse comando marque uma imagem ou um video de até 10 segundos*`, mek)
+          if (fileL > 120000 || msgSeconds > 6) l.reply(from, `*Mídias com mais de 1.2MB ou mais que 6 segundos geralmente geram stickers estáticos, se for o caso tente diminuir a duração*`, mek)
           eph = isEphemeralVid ? ephemeralPath.videoMessage : quo
           let media = await l.downloadMediaMessage(mek.quoted ? eph : quo.message.videoMessage)
           let encmedia = await l.sendVideoAsSticker(from, media, `st`, mek, { packname: `Zuri`, author: `BOT` })
